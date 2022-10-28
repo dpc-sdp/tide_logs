@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * Implements hook_admin_audit_trail_log_alter().
+ *
+ * Responds to admin_audit_trail events and forwards it to tide_logs otel collector.
+ */
+function tide_logs_admin_audit_trail_log_alter(&$log) {
+    $channel = sprintf("admin_audit_trail_%s", $log["type"]);
+
+    // Strip out properties that are unnecessary.
+    $filtered_log = $log;
+    unset(
+        $filtered_log["lid"],
+        $filtered_log["type"],
+        $filtered_log["created"],
+        $filtered_log["ip"],
+    );
+
+    // Remove markup from description.
+    $filtered_log["message"] = strip_tags($filtered_log["message"]);
+
+    // Format message as json for simpler parsing in sumo.
+    $message = json_encode($filtered_log, JSON_UNESCAPED_SLASHES);
+    \Drupal::logger($channel)->notice($message);
+}
