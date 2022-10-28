@@ -5,6 +5,9 @@ Provides a SumoLogic handler for Monolog.
 
   - [Lagoon logs](https://drupal.org/project/lagoon_logs)
 
+There is also a soft dependency on the following modules
+
+  - [admin audit trail](https://drupal.org/project/admin_audit_trail) - auditable events are sent to the Drupal logs
 
 ## Activation
 
