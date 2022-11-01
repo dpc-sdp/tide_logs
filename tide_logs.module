@@ -17,10 +17,17 @@ function tide_logs_admin_audit_trail_log_alter(&$log) {
         $filtered_log["ip"],
     );
 
-    // Remove markup from description.
-    $filtered_log["message"] = strip_tags($filtered_log["message"]);
+    // Remove markup from text fields.
+    $filtered_log['description'] = preg_replace( '/[\x{200B}-\x{200D}]/u', '', strip_tags($filtered_log['description']));
+    $filtered_log['ref_char'] = preg_replace( '/[\x{200B}-\x{200D}]/u', '', $filtered_log['ref_char']);
 
-    // Format message as json for simpler parsing in sumo.
-    $message = json_encode($filtered_log, JSON_UNESCAPED_SLASHES);
+    // json not supported in watchdog messages. Using a comma-delimited list
+    // in key:value format.
+    $items = [];
+    foreach ($filtered_log as $key => $value) {
+      $items[] = sprintf("%s:%s", $key, $value);
+    }
+    $message = implode(", ", $items);
+
     \Drupal::logger($channel)->notice($message);
 }
