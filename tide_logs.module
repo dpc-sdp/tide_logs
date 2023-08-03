@@ -6,6 +6,10 @@
  * Responds to admin_audit_trail events and forwards it to tide_logs otel collector.
  */
 function tide_logs_admin_audit_trail_log_alter(&$log) {
+  $environment = Settings::get('environment');
+  if ($environment == 'ci' || $environment == 'development' || $environment == 'local') {
+    return;
+  }
   $channel = sprintf("admin_audit_trail_%s", $log["type"]);
 
   // Strip out properties that are unnecessary.
@@ -15,6 +19,7 @@ function tide_logs_admin_audit_trail_log_alter(&$log) {
     $filtered_log["type"],
     $filtered_log["created"],
     $filtered_log["ip"],
+    $filtered_log["ref_entity"],
   );
 
   // Remove markup from text fields.
