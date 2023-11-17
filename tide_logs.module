@@ -1,6 +1,5 @@
 <?php
 
-use \Drupal\Core\Site\Settings;
 
 /**
  * Implements hook_admin_audit_trail_log_alter().
@@ -8,12 +7,6 @@ use \Drupal\Core\Site\Settings;
  * Responds to admin_audit_trail events and forwards it to tide_logs otel collector.
  */
 function tide_logs_admin_audit_trail_log_alter(&$log) {
-  // Only runs on production environment.
-  $environment = Settings::get('environment');
-  if ($environment !== 'production') {
-    return;
-  }
-
   $channel = sprintf("admin_audit_trail_%s", $log["type"]);
 
   // Strip out properties that are unnecessary.
