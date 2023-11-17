@@ -1,5 +1,6 @@
 <?php
 
+
 /**
  * Implements hook_admin_audit_trail_log_alter().
  *
@@ -15,6 +16,7 @@ function tide_logs_admin_audit_trail_log_alter(&$log) {
     $filtered_log["type"],
     $filtered_log["created"],
     $filtered_log["ip"],
+    $filtered_log["ref_entity"],
   );
 
   // Remove markup from text fields.

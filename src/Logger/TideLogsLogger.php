@@ -75,7 +75,7 @@ class TideLogsLogger extends LagoonLogsLogger {
   /**
    * {@inheritdoc}
    */
-  public function log($level, $message, array $context = []) {
+  public function log($level, $message, array $context = []): void {
     $sumoLogicHost = $this->getSumoLogicHost();
     $sumoLogicCategory = $this->getSumoLogicCategory();
 
