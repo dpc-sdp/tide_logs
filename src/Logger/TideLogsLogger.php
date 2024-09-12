@@ -12,6 +12,7 @@ use Drupal\lagoon_logs\LagoonLogsLogProcessor;
 use Drupal\lagoon_logs\Logger\LagoonLogsLogger;
 use Drupal\Core\Logger\LogMessageParserInterface;
 use Drupal\lagoon_logs\Logger\LagoonLogsLoggerFactory;
+use Drupal\tide_logs\Logger\TideSectionIoIdService;
 
 /**
  * Defines a logger channel for sending logs to SumoLogic.
@@ -42,6 +43,8 @@ class TideLogsLogger extends LagoonLogsLogger {
 
   protected ImmutableConfig $moduleConfig;
 
+  protected TideSectionIoIdService $tideSectionIoIdService;
+
   /**
    * Flag to indicate whether to print debug messages.
    *
@@ -55,18 +58,22 @@ class TideLogsLogger extends LagoonLogsLogger {
    * @param LogMessageParserInterface $parser
    *   The log message parser service.
    * @param Client $http_client
-   *   The http client service.
+   *   The HTTP client service.
    * @param ImmutableConfig $module_config
    *   The module's config.
+   * @param TideSectionIoIdService $tide_section_io_id_service
+   *   The service to retrieve the x-section-io-id.
    */
   public function __construct(
     LogMessageParserInterface $parser,
     Client $http_client,
-    $module_config
+    ImmutableConfig $module_config,
+    TideSectionIoIdService $tide_section_io_id_service
   ) {
     $this->parser = $parser;
     $this->httpClient = $http_client;
     $this->moduleConfig = $module_config;
+    $this->tideSectionIoIdService = $tide_section_io_id_service;
     $this->hostName = $module_config->get('host') ?: static::DEFAULT_UDPLOG_HOST;
     $this->hostPort = $module_config->get('port') ?: static::DEFAULT_UDPLOG_port;
     $this->showDebug = (bool) $module_config->get('debug');
@@ -86,6 +93,12 @@ class TideLogsLogger extends LagoonLogsLogger {
           '@cat' => $sumoLogicCategory,
         ]
       ));
+    }
+
+    // Fetch x-section-io-id and add it to the context.
+    $sectionIoId = $this->tideSectionIoIdService->getSectionIoId();
+    if ($sectionIoId) {
+      $context['x-section-io-id'] = $sectionIoId;
     }
 
     if (empty($sumoLogicHost) || empty($this->hostName) || empty($this->hostPort)) {
