@@ -12,9 +12,9 @@ class TideSectionIoIdService {
     $this->requestStack = $requestStack;
   }
 
-  // Get the x-section-io-id from the current request's headers.
+  // Get the x-request-id from the current request's headers.
   public function getSectionIoId() {
     $request = $this->requestStack->getCurrentRequest();
-    return $request ? $request->headers->get('x-section-io-id') : NULL;
+    return $request ? $request->headers->get('x-request-id') : NULL;
   }
 }

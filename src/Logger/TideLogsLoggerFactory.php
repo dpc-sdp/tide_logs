@@ -22,7 +22,7 @@ class TideLogsLoggerFactory {
    * @param Client $http_client
    *   The http client service.
    * @param TideSectionIoIdService $tide_section_io_id_service
-   *   The service to retrieve the x-section-io-id.
+   *   The service to retrieve the x-request-id.
    *
    * @return TideLogsLogger
    *   The logger instance that was created.

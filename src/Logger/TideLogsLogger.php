@@ -62,7 +62,7 @@ class TideLogsLogger extends LagoonLogsLogger {
    * @param ImmutableConfig $module_config
    *   The module's config.
    * @param TideSectionIoIdService $tide_section_io_id_service
-   *   The service to retrieve the x-section-io-id.
+   *   The service to retrieve the x-request-id.
    */
   public function __construct(
     LogMessageParserInterface $parser,
@@ -95,10 +95,10 @@ class TideLogsLogger extends LagoonLogsLogger {
       ));
     }
 
-    // Fetch x-section-io-id and add it to the context.
+    // Fetch x-request-id and add it to the context.
     $sectionIoId = $this->tideSectionIoIdService->getSectionIoId();
     if ($sectionIoId) {
-      $context['x-section-io-id'] = $sectionIoId;
+      $context['x-request-id'] = $sectionIoId;
     }
 
     if (empty($sumoLogicHost) || empty($this->hostName) || empty($this->hostPort)) {
