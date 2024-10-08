@@ -92,6 +92,16 @@ class TideLogsLogger extends LagoonLogsLogger {
       return;
     }
 
+    // Retrieve all headers using the getAllHeaders() function.
+    $headers = $this->getAllHeaders();
+
+    // Check if the x-request-id exists.
+    if (isset($headers['x-request-id'])) {
+      $requestId = $headers['x-request-id'];
+      // Include the request ID in the log context.
+      $context['request_id'] = $requestId;
+    }
+
     global $base_url;
 
     $logger = new Logger(
@@ -184,6 +194,31 @@ class TideLogsLogger extends LagoonLogsLogger {
       $category = $this->moduleConfig->get('sumologic_category');
     }
     return $category ?: static::DEFAULT_CATEGORY;
+  }
+
+  /**
+   * Retrieves all HTTP headers from the current request.
+   *
+   * This function manually extracts HTTP headers from the $_SERVER superglobal.
+   * It processes server variables that begin with 'HTTP_' and converts them
+   * into a format similar to what would be returned by getallheaders(), making it
+   * compatible with environments.
+   *
+   * Header names are standardized to all lowercase for consistency.
+   *
+   * @return array
+   *   An associative array of HTTP headers where the key is the header name
+   *   (e.g., 'user-agent') in all lowercase and the value is the header's content.
+   */
+  protected function getAllHeaders() {
+    $headers = [];
+    foreach ($_SERVER as $name => $value) {
+      if (substr($name, 0, 5) == 'HTTP_') {
+        // Convert the server variable name into a standard header format (all lowercase).
+        $headers[strtolower(str_replace('_', '-', substr($name, 5)))] = $value;
+      }
+    }
+    return $headers;
   }
 
 }
