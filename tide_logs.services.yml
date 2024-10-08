@@ -4,8 +4,4 @@ services:
     factory: Drupal\tide_logs\Logger\TideLogsLoggerFactory::create
     tags:
       - { name: logger }
-    arguments: ['@config.factory', '@logger.log_message_parser', '@http_client', '@tide_logs.tide_section_io_id_service']
-
-  tide_logs.tide_section_io_id_service:
-    class: Drupal\tide_logs\Logger\TideSectionIoIdService
-    arguments: ['@request_stack']
+    arguments: ['@config.factory', '@logger.log_message_parser', '@http_client']

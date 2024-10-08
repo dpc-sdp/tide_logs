@@ -12,7 +12,6 @@ use Drupal\lagoon_logs\LagoonLogsLogProcessor;
 use Drupal\lagoon_logs\Logger\LagoonLogsLogger;
 use Drupal\Core\Logger\LogMessageParserInterface;
 use Drupal\lagoon_logs\Logger\LagoonLogsLoggerFactory;
-use Drupal\tide_logs\Logger\TideSectionIoIdService;
 
 /**
  * Defines a logger channel for sending logs to SumoLogic.
@@ -43,8 +42,6 @@ class TideLogsLogger extends LagoonLogsLogger {
 
   protected ImmutableConfig $moduleConfig;
 
-  protected TideSectionIoIdService $tideSectionIoIdService;
-
   /**
    * Flag to indicate whether to print debug messages.
    *
@@ -58,22 +55,18 @@ class TideLogsLogger extends LagoonLogsLogger {
    * @param LogMessageParserInterface $parser
    *   The log message parser service.
    * @param Client $http_client
-   *   The HTTP client service.
+   *   The http client service.
    * @param ImmutableConfig $module_config
    *   The module's config.
-   * @param TideSectionIoIdService $tide_section_io_id_service
-   *   The service to retrieve the x-request-id.
    */
   public function __construct(
     LogMessageParserInterface $parser,
     Client $http_client,
-    ImmutableConfig $module_config,
-    TideSectionIoIdService $tide_section_io_id_service
+    $module_config
   ) {
     $this->parser = $parser;
     $this->httpClient = $http_client;
     $this->moduleConfig = $module_config;
-    $this->tideSectionIoIdService = $tide_section_io_id_service;
     $this->hostName = $module_config->get('host') ?: static::DEFAULT_UDPLOG_HOST;
     $this->hostPort = $module_config->get('port') ?: static::DEFAULT_UDPLOG_port;
     $this->showDebug = (bool) $module_config->get('debug');
@@ -95,14 +88,18 @@ class TideLogsLogger extends LagoonLogsLogger {
       ));
     }
 
-    // Fetch x-request-id and add it to the context.
-    $sectionIoId = $this->tideSectionIoIdService->getSectionIoId();
-    if ($sectionIoId) {
-      $context['x-request-id'] = $sectionIoId;
-    }
-
     if (empty($sumoLogicHost) || empty($this->hostName) || empty($this->hostPort)) {
       return;
+    }
+
+    // Retrieve all headers using the getallheaders() function
+    $headers = $this->getAllHeaders();
+    
+    // Check if the X-Request-ID (or other specific headers) exists.
+    if (isset($headers['X-Request-Id'])) {
+      $requestId = $headers['X-Request-Id'];
+      // Include the request ID in the log context.
+      $context['request_id'] = $requestId;
     }
 
     global $base_url;
@@ -197,6 +194,36 @@ class TideLogsLogger extends LagoonLogsLogger {
       $category = $this->moduleConfig->get('sumologic_category');
     }
     return $category ?: static::DEFAULT_CATEGORY;
+  }
+
+  /**
+   * Retrieves all HTTP headers from the current request.
+   *
+   * This function manually extracts HTTP headers from the $_SERVER superglobal.
+   * It processes server variables that begin with 'HTTP_' and converts them
+   * into a format similar to what would be returned by getallheaders(), making it
+   * compatible with environments where getallheaders() may not be available.
+   *
+   * The function also standardizes header names by replacing underscores with
+   * hyphens and ensuring proper capitalization.
+   *
+   * @return array
+   *   An associative array of HTTP headers where the key is the header name
+   *   (e.g., 'User-Agent') and the value is the header's content.
+   */
+  protected function getAllHeaders() {
+    if (!function_exists('getallheaders')) {
+      function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+          if (substr($name, 0, 5) == 'HTTP_') {
+            $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+          }
+        }
+        return $headers;
+      }
+    }
+    return getallheaders();
   }
 
 }
