@@ -92,12 +92,12 @@ class TideLogsLogger extends LagoonLogsLogger {
       return;
     }
 
-    // Retrieve all headers using the getallheaders() function
+    // Retrieve all headers using the getAllHeaders() function.
     $headers = $this->getAllHeaders();
-    
-    // Check if the X-Request-ID (or other specific headers) exists.
-    if (isset($headers['X-Request-Id'])) {
-      $requestId = $headers['X-Request-Id'];
+
+    // Check if the x-request-id exists.
+    if (isset($headers['x-request-id'])) {
+      $requestId = $headers['x-request-id'];
       // Include the request ID in the log context.
       $context['request_id'] = $requestId;
     }
@@ -204,20 +204,18 @@ class TideLogsLogger extends LagoonLogsLogger {
    * into a format similar to what would be returned by getallheaders(), making it
    * compatible with environments.
    *
-   * The function also standardizes header names by replacing underscores with
-   * hyphens and ensuring proper capitalization.
+   * Header names are standardized to all lowercase for consistency.
    *
    * @return array
    *   An associative array of HTTP headers where the key is the header name
-   *   (e.g., 'User-Agent') and the value is the header's content.
+   *   (e.g., 'user-agent') in all lowercase and the value is the header's content.
    */
   protected function getAllHeaders() {
     $headers = [];
     foreach ($_SERVER as $name => $value) {
-      // Check if the server variable is a header (starts with 'HTTP_').
       if (substr($name, 0, 5) == 'HTTP_') {
-        // Convert 'HTTP_X_REQUEST_ID' to 'X-Request-Id' format.
-        $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+        // Convert the server variable name into a standard header format (all lowercase).
+        $headers[strtolower(str_replace('_', '-', substr($name, 5)))] = $value;
       }
     }
     return $headers;
