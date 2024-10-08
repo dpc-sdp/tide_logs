@@ -202,7 +202,7 @@ class TideLogsLogger extends LagoonLogsLogger {
    * This function manually extracts HTTP headers from the $_SERVER superglobal.
    * It processes server variables that begin with 'HTTP_' and converts them
    * into a format similar to what would be returned by getallheaders(), making it
-   * compatible with environments where getallheaders() may not be available.
+   * compatible with environments.
    *
    * The function also standardizes header names by replacing underscores with
    * hyphens and ensuring proper capitalization.
@@ -212,18 +212,15 @@ class TideLogsLogger extends LagoonLogsLogger {
    *   (e.g., 'User-Agent') and the value is the header's content.
    */
   protected function getAllHeaders() {
-    if (!function_exists('getallheaders')) {
-      function getallheaders() {
-        $headers = [];
-        foreach ($_SERVER as $name => $value) {
-          if (substr($name, 0, 5) == 'HTTP_') {
-            $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
-          }
-        }
-        return $headers;
+    $headers = [];
+    foreach ($_SERVER as $name => $value) {
+      // Check if the server variable is a header (starts with 'HTTP_').
+      if (substr($name, 0, 5) == 'HTTP_') {
+        // Convert 'HTTP_X_REQUEST_ID' to 'X-Request-Id' format.
+        $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
       }
     }
-    return getallheaders();
+    return $headers;
   }
 
 }
