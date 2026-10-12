@@ -3,6 +3,7 @@
 namespace Drupal\tide_logs\Logger;
 
 use Monolog\Formatter\JsonFormatter;
+use Monolog\LogRecord;
 
 /**
  * Class TideLogsFormatter
@@ -39,8 +40,8 @@ class TideLogsFormatter extends JsonFormatter {
   /**
    * {@inheritDoc}
    */
-  public function format(array $record): string {
-    $record = json_decode(parent::format($record), TRUE);
+  public function format(LogRecord $record): string {
+    $record = $this->normalize($record);
 
     // Add the SumoLogic attributes.
     $record['source_host'] = $this->sourceHost;
