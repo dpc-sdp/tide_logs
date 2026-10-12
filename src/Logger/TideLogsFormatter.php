@@ -41,7 +41,7 @@ class TideLogsFormatter extends JsonFormatter {
    * {@inheritDoc}
    */
   public function format(LogRecord $record): string {
-    $record = $this->normalize($record);
+    $record = $this->normalizeRecord($record);
 
     // Add the SumoLogic attributes.
     $record['source_host'] = $this->sourceHost;
