@@ -11,7 +11,6 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\lagoon_logs\LagoonLogsLogProcessor;
 use Drupal\lagoon_logs\Logger\LagoonLogsLogger;
 use Drupal\Core\Logger\LogMessageParserInterface;
-use Drupal\lagoon_logs\Logger\LagoonLogsLoggerFactory;
 
 /**
  * Defines a logger channel for sending logs to SumoLogic.
@@ -31,7 +30,7 @@ class TideLogsLogger extends LagoonLogsLogger {
   /**
    * Default udplog port.
    */
-  public const DEFAULT_UDPLOG_port = 5514;
+  public const DEFAULT_UDPLOG_PORT = 5514;
 
   /**
    * Default SumoLogic category.
@@ -52,6 +51,8 @@ class TideLogsLogger extends LagoonLogsLogger {
   /**
    * Constructs a TideLogsLogger object.
    *
+   * @param \Closure $configFactory
+   *   The config factory closure.
    * @param LogMessageParserInterface $parser
    *   The log message parser service.
    * @param Client $http_client
@@ -60,15 +61,18 @@ class TideLogsLogger extends LagoonLogsLogger {
    *   The module's config.
    */
   public function __construct(
+    \Closure $configFactory,
     LogMessageParserInterface $parser,
     Client $http_client,
     $module_config
   ) {
+    parent::__construct($configFactory, $parser);
+    
     $this->parser = $parser;
     $this->httpClient = $http_client;
     $this->moduleConfig = $module_config;
     $this->hostName = $module_config->get('host') ?: static::DEFAULT_UDPLOG_HOST;
-    $this->hostPort = $module_config->get('port') ?: static::DEFAULT_UDPLOG_port;
+    $this->hostPort = $module_config->get('port') ?: static::DEFAULT_UDPLOG_PORT;
     $this->showDebug = (bool) $module_config->get('debug');
   }
 
@@ -115,7 +119,9 @@ class TideLogsLogger extends LagoonLogsLogger {
     );
     $udpHandler = new SocketHandler($connectionString);
 
-    $udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
+    // Ensure chunk size constant is available via parent class or fallback.
+    $chunkSize = defined('parent::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES') ? parent::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES : 65536;
+    $udpHandler->setChunkSize($chunkSize);
 
     $udpHandler->setFormatter(
       new TideLogsFormatter($sumoLogicHost, $sumoLogicCategory)
@@ -168,8 +174,8 @@ class TideLogsLogger extends LagoonLogsLogger {
     $enabled = $this->moduleConfig->get('enable');
     return $enabled ?
       implode('-', [
-        getenv('LAGOON_PROJECT') ?: LagoonLogsLoggerFactory::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT,
-        getenv('LAGOON_GIT_SAFE_BRANCH') ?: LagoonLogsLoggerFactory::LAGOON_LOGS_DEFAULT_SAFE_BRANCH,
+        getenv('LAGOON_PROJECT') ?: self::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT,
+        getenv('LAGOON_GIT_SAFE_BRANCH') ?: self::LAGOON_LOGS_DEFAULT_SAFE_BRANCH,
       ]) :
       FALSE;
   }
