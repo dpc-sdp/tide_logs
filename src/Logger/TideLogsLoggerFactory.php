@@ -31,7 +31,18 @@ class TideLogsLoggerFactory {
     LogMessageParserInterface $parser,
     Client $http_client
   ) {
+    // Create a closure to evaluate configuration lazily as expected by LagoonLogsLogger.
+    $config_closure = function () use ($config) {
+      return $config->get('tide_logs.settings');
+    };
+
+    // The argument order must match TideLogsLogger::__construct().
+    // 1. \Closure $configFactory.
+    // 2. LogMessageParserInterface $parser.
+    // 3. Client $http_client.
+    // 4. $module_config.
     return new TideLogsLogger(
+      $config_closure,
       $parser,
       $http_client,
       $config->get('tide_logs.settings')
