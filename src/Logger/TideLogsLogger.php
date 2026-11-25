@@ -9,6 +9,7 @@ use GuzzleHttp\Client;
 use Monolog\Handler\SocketHandler;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\lagoon_logs\LagoonLogsLogProcessor;
+use Drupal\lagoon_logs\Logger\LagoonLogsLoggerFactory;
 use Drupal\lagoon_logs\Logger\LagoonLogsLogger;
 use Drupal\Core\Logger\LogMessageParserInterface;
 
@@ -51,28 +52,25 @@ class TideLogsLogger extends LagoonLogsLogger {
   /**
    * Constructs a TideLogsLogger object.
    *
-   * @param \Closure $configFactory
-   *   The config factory closure.
-   * @param LogMessageParserInterface $parser
+   * @param \Drupal\Core\Logger\LogMessageParserInterface $parser
    *   The log message parser service.
-   * @param Client $http_client
+   * @param \GuzzleHttp\Client $http_client
    *   The http client service.
-   * @param ImmutableConfig $module_config
+   * @param \Drupal\Core\Config\ImmutableConfig $module_config
    *   The module's config.
    */
   public function __construct(
-    \Closure $configFactory,
     LogMessageParserInterface $parser,
     Client $http_client,
-    $module_config
+    ImmutableConfig $module_config,
   ) {
-    parent::__construct($configFactory, $parser);
-    
-    $this->parser = $parser;
+    $host = $module_config->get('host') ?: static::DEFAULT_UDPLOG_HOST;
+    $port = (int) ($module_config->get('port') ?: static::DEFAULT_UDPLOG_PORT);
+    $log_full_identifier = self::resolveLogFullIdentifier($module_config);
+    parent::__construct($host, $port, $log_full_identifier, $parser);
+
     $this->httpClient = $http_client;
     $this->moduleConfig = $module_config;
-    $this->hostName = $module_config->get('host') ?: static::DEFAULT_UDPLOG_HOST;
-    $this->hostPort = $module_config->get('port') ?: static::DEFAULT_UDPLOG_PORT;
     $this->showDebug = (bool) $module_config->get('debug');
   }
 
@@ -119,8 +117,7 @@ class TideLogsLogger extends LagoonLogsLogger {
     );
     $udpHandler = new SocketHandler($connectionString);
 
-    // Ensure chunk size constant is available via parent class or fallback.
-    $chunkSize = defined('parent::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES') ? parent::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES : 65536;
+    $chunkSize = LagoonLogsLogger::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES;
     $udpHandler->setChunkSize($chunkSize);
 
     $udpHandler->setFormatter(
@@ -171,13 +168,26 @@ class TideLogsLogger extends LagoonLogsLogger {
    *   Either the namespace, or False in case logging is not enabled.
    */
   public function getSumoLogicHost() {
-    $enabled = $this->moduleConfig->get('enable');
-    return $enabled ?
-      implode('-', [
-        getenv('LAGOON_PROJECT') ?: self::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT,
-        getenv('LAGOON_GIT_SAFE_BRANCH') ?: self::LAGOON_LOGS_DEFAULT_SAFE_BRANCH,
-      ]) :
-      FALSE;
+    return self::resolveLogFullIdentifier($this->moduleConfig);
+  }
+
+  /**
+   * Builds the Lagoon log identifier used by the parent UDP logger.
+   *
+   * @param \Drupal\Core\Config\ImmutableConfig $module_config
+   *   The tide_logs settings.
+   *
+   * @return string|false
+   *   The namespace identifier, or FALSE when logging is disabled.
+   */
+  protected static function resolveLogFullIdentifier(ImmutableConfig $module_config) {
+    if (!$module_config->get('enable')) {
+      return FALSE;
+    }
+    return implode('-', [
+      getenv('LAGOON_PROJECT') ?: LagoonLogsLoggerFactory::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT,
+      getenv('LAGOON_GIT_SAFE_BRANCH') ?: LagoonLogsLoggerFactory::LAGOON_LOGS_DEFAULT_SAFE_BRANCH,
+    ]);
   }
 
   /**
